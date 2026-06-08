@@ -1,0 +1,136 @@
+
+CTF Writeup — digits.bin
+
+**Platform:** CyLab Security Academy  
+**Category:** Forensics  
+**Difficulty:** Beginner  
+**Flag:** `picoCTF{h1dd3n_1n_th3_b1n4ry_67bd9b59}`
+
+---
+
+## Challenge Description
+
+> This file doesn't look like much... just a bunch of 1s and 0s. But maybe it's not just random noise. Can you recover anything meaningful from this?
+
+**File:** `digits.bin` (71,192 bytes)
+
+---
+
+## Reconnaissance
+
+Mở file ra thấy toàn ký tự `0` và `1`:
+
+```
+11111111110001111111111110000000000000000100001001010011001010010...
+```
+
+Nhận xét ban đầu:
+- File chỉ chứa ký tự `0` và `1` — đây là **binary string** dạng text
+- 71,192 ký tự / 8 bit = ~8,899 bytes sau khi decode
+- Không có magic bytes rõ ràng ở dạng text
+
+---
+
+## Phân tích
+
+### Bước 1 — Nhận diện encoding
+
+File chứa thuần ký tự `0` và `1` → đây là **Binary encoding** (mỗi 8 bit = 1 byte ASCII).
+
+### Bước 2 — Decode bằng CyberChef
+
+Dùng CyberChef với operation **From Binary**:
+
+```
+Input:  11111111110001111111111110000000000000000100001...
+Recipe: From Binary
+Output: ÿØÿà..JFIF...
+```
+
+### Bước 3 — Nhận diện magic bytes
+
+Output bắt đầu bằng:
+```
+FF D8 FF E0  →  ÿØÿà + JFIF
+```
+
+Đây là **JPEG magic bytes** — file thật sự là một ảnh JPG bị encode thành binary string.
+
+| Magic Bytes | ASCII | File Type |
+|-------------|-------|-----------|
+| `FF D8 FF E0` | `ÿØÿà` | JPEG Image |
+
+### Bước 4 — Extract file ảnh
+
+- Save output từ CyberChef thành `digits.jpg`
+- Mở file ảnh ra
+
+---
+
+## Result
+
+Ảnh hiển thị flag:
+
+![Flag image](digits.jpg)
+
+```
+picoCTF{h1dd3n_1n_th3_b1n4ry_67bd9b59}
+```
+
+---
+
+## Kiến thức rút ra
+
+**1. Binary String Encoding**
+- Mỗi ký tự ASCII = 8 bit nhị phân
+- Ví dụ: `01001000` = `0x48` = `H`
+- Tool: CyberChef **From Binary**
+
+**2. Magic Bytes**
+- Mỗi file type có signature riêng ở phần header
+- Dùng để nhận diện file thật sự là gì, bất kể đuôi file
+- Command Linux: `xxd file | head -3` hoặc `file filename`
+
+**3. Common Magic Bytes trong CTF**
+
+| File | Hex | ASCII |
+|------|-----|-------|
+| JPEG | `FF D8 FF E0` | `ÿØÿà` |
+| PNG | `89 50 4E 47` | `‰PNG` |
+| ZIP | `50 4B 03 04` | `PK..` |
+| PDF | `25 50 44 46` | `%PDF` |
+| ELF | `7F 45 4C 46` | `.ELF` |
+| GIF | `47 49 46 38` | `GIF8` |
+
+**4. Quy trình forensics cơ bản**
+```
+Nhận file lạ
+    → file <filename>        # identify type
+    → xxd <filename> | head  # check magic bytes  
+    → strings <filename>     # tìm text ẩn
+    → binwalk <filename>     # detect file ẩn
+```
+
+---
+
+## Tools Used
+
+- **CyberChef** — `From Binary` operation
+- **Windows Photo Viewer** — xem ảnh kết quả
+
+---
+
+## Author
+
+| | |
+|---|---|
+| **Author** | Nguyễn Trung Nghĩa |
+| **Team** | grep_and_pray |
+| **CTFtime** | [grep_and_pray](https://ctftime.org) |
+| **Date** | 2026-06-08 |
+| **Platform** | CyLab Security Academy |
+
+---
+
+*Writeup by **grep_and_pray** (Nguyễn Trung Nghĩa)*  
+*AI-assisted documentation: Claude (Anthropic) — dùng để hỗ trợ viết writeup và giải thích kiến thức. Challenge được tự giải.*
