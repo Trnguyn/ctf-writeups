@@ -121,3 +121,5 @@ Nhận file lạ
 ---
 
 *Writeup by grep_and_pray*
+**Author:** Nguyễn Trung Nguyên  
+**Date:** 2026-06-08
