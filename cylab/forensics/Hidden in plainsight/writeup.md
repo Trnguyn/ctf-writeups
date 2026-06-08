@@ -95,9 +95,7 @@ Base64 string trong file
 "steghide:cEF6ZW5kdmNyQ="
     ↓ From Base64 (lần 2)
 "steghide:pAzzword"
-    ↓ steghide extract -p "pAzzword"
-Binary string hidden message
-    ↓ From Binary
+    ↓ steghide extract -p 'pAzzword'
 picoCTF{h1dd3n_1n_1m4g3_871ba555}
 ```
 
