@@ -77,7 +77,7 @@ Password: pAzzword
 ```
 
 
-Sau khi sử dụng tool onl thì ra ngay kết quả
+Sau khi nhập password vào tool online steghide extract, flag hiện ra ngay lập tức:
 
 ```
 picoCTF{h1dd3n_1n_1m4g3_871ba555}
@@ -99,7 +99,7 @@ Base64 string trong file
 picoCTF{h1dd3n_1n_1m4g3_871ba555}
 ```
 
-**5 lớp bảo vệ:**
+**4 lớp bảo vệ:**
 1. Base64 encoding lớp 1
 2. Base64 encoding lớp 2
 3. Steganography (steghide)
