@@ -1,52 +1,55 @@
-# CTF Writeup — Information
+# CTF Writeup — Glory of the Garden
 
 **Platform:** CyLab Security Academy (PicoCTF)  
 **Category:** Forensics  
 **Difficulty:** Easy  
-**Flag:** `picoCTF{the_m3tadata_1s_modified}`
+**Flag:** `picoCTF{more_than_m33ts_the_3y398ee229a}`
 
 ---
 
 ## Challenge Description
 
-> Files can always be changed in a secret way. Can you find the flag?
+> This file contains more than it seems.
 
-**File:** `cat.jpg`
+**File:** `garden.jpg`
 
 ---
 
 ## Reconnaissance
 
-File JPEG — `exiftool` ngay:
+File JPEG — chạy bộ 3 quen thuộc:
 
 ```bash
-exiftool ~/cat.jpg
+file ~/garden.jpg
+exiftool ~/garden.jpg
+xxd ~/garden.jpg | tail -20
 ```
 
-Output đáng chú ý:
+`exiftool` không có gì đáng ngờ — metadata sạch, không có Base64 ẩn trong field nào.
+
+Nhưng `xxd tail` tiết lộ ngay:
 
 ```
-Copyright Notice    : PicoCTF
-License             : cGljb0NURnt0aGVfbTN0YWRhdGFfMXNfbW9kaWZpZWR9
-Rights              : PicoCTF
+00230550: ...ffd9 4865  ..............He
+00230560: 7265 2069 7320 6120 666c 6167 3a20 7069  re is a flag: pi
+00230570: 636f 4354 467b 6d6f 7265 5f74 6861 6e5f  coCTF{more_than_
+00230580: 6d33 3374 735f 7468 655f 3379 3339 3865  m33ts_the_3y398e
+00230590: 6532 3239 617d 0a                        e229a}.
 ```
 
-Trường `License` chứa chuỗi Base64 thay vì license text hợp lệ.
+Flag được nhét thẳng dưới dạng plaintext sau `FFD9` — JPEG End of Image marker.
 
 ---
 
 ## Phân tích
 
-Decode trực tiếp trên terminal:
+`FFD9` là magic bytes kết thúc của JPEG. Bất kỳ dữ liệu nào sau offset đó đều không thuộc ảnh — tool xem ảnh sẽ bỏ qua, nhưng hex dump sẽ thấy rõ.
+
+Cách tìm nhanh hơn bằng `strings`:
 
 ```bash
-echo "cGljb0NURnt0aGVfbTN0YWRhdGFfMXNfbW9kaWZpZWR9" | base64 -d
-```
-
-Output:
-
-```
-picoCTF{the_m3tadata_1s_modified}
+strings ~/garden.jpg | grep picoCTF
+# Here is a flag: picoCTF{more_than_m33ts_the_3y398ee229a}
 ```
 
 ---
@@ -54,11 +57,10 @@ picoCTF{the_m3tadata_1s_modified}
 ## Attack Chain
 
 ```
-cat.jpg
-    ↓ exiftool → License field chứa chuỗi Base64
-cGljb0NURnt0aGVfbTN0YWRhdGFfMXNfbW9kaWZpZWR9
-    ↓ base64 -d
-picoCTF{the_m3tadata_1s_modified}
+garden.jpg
+    ↓ exiftool → metadata sạch
+    ↓ xxd tail → thấy plaintext sau FFD9 (JPEG EOF)
+"Here is a flag: picoCTF{more_than_m33ts_the_3y398ee229a}"
 ```
 
 ---
@@ -66,34 +68,47 @@ picoCTF{the_m3tadata_1s_modified}
 ## Result
 
 ```
-picoCTF{the_m3tadata_1s_modified}
+picoCTF{more_than_m33ts_the_3y398ee229a}
 ```
 
 ---
 
 ## Kiến thức rút ra
 
-**1. Metadata field hay bị lợi dụng để ẩn dữ liệu**
+**1. Dữ liệu ẩn sau EOF marker**
 
-Hai bài liên tiếp (CanYouSee và Information) đều dùng cùng kỹ thuật — Base64 nhúng trong metadata field ít ai để ý. Các field thường bị lợi dụng:
+Mỗi file format có marker kết thúc riêng. Dữ liệu nhét sau đó sẽ bị tool xem file bỏ qua hoàn toàn, nhưng vẫn tồn tại trong file:
 
-| Field | Bài |
-|-------|-----|
-| `Attribution URL` | CanYouSee |
-| `License` | Information |
-| `Comment` | nhiều bài khác |
-| `Author` | Riddle Registry |
+| Format | EOF Marker |
+|--------|------------|
+| JPEG | `FF D9` |
+| PNG | `IEND` + CRC |
+| PDF | `%%EOF` |
+| ZIP | `PK\x05\x06` |
 
-**2. exiftool là tool đầu tiên cần chạy với mọi file ảnh**
+**2. strings là shortcut mạnh**
 
-Không cần biết file có bị tamper hay không — cứ `exiftool` trước, đọc toàn bộ output, tìm field nào chứa chuỗi bất thường.
+Thay vì đọc hex dump thủ công, `strings` extract toàn bộ printable text trong file binary — nhanh hơn nhiều khi flag ở dạng plaintext.
+
+**3. Quy trình đầy đủ khi gặp ảnh trong CTF**
+
+```
+exiftool   → metadata, Base64 ẩn trong field
+strings    → plaintext ẩn trong file
+xxd tail   → data sau EOF marker
+binwalk    → file ẩn bên trong
+steghide   → steganography
+```
+
+Bài này dừng ở bước 2 — `strings` hoặc `xxd tail` là đủ.
 
 ---
 
 ## Tools Used
 
-- **exiftool** — đọc metadata, phát hiện License field bất thường
-- **base64 -d** — decode flag
+- **exiftool** — kiểm tra metadata
+- **xxd** — phát hiện plaintext sau JPEG EOF marker
+- **strings** — extract text ẩn trong binary file
 
 ---
 
