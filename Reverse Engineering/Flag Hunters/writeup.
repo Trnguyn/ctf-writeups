@@ -1,0 +1,171 @@
+# CTF Writeup — Flag Hunters
+
+**Platform:** CyLab Security Academy (PicoCTF)  
+**Category:** Reverse Engineering  
+**Difficulty:** Easy  
+**Flag:** `picoCTF{70637h3r_f0r3v3r_0ed60683}`
+
+---
+
+## Challenge Description
+
+> Lyrics jump from verses to the refrain kind of like a subroutine call. There's a hidden refrain this program doesn't print by default. Can you get it to print it? There might be something in it for you.
+
+**File:** `lyric-reader.py`  
+**Instance:** `nc verbal-sleep.picoctf.net 58276`
+
+---
+
+## Reconnaissance
+
+Bài cho source code Python — đọc thẳng, không cần disassembler.
+
+Chương trình implement một "interpreter" đơn giản để đọc lyrics theo flow. Các instruction được hỗ trợ:
+
+| Instruction | Hành vi |
+|-------------|---------|
+| `REFRAIN` | Ghi `lip+1` vào dòng `RETURN`, nhảy tới `[REFRAIN]+1` (giống CALL) |
+| `RETURN N` | Nhảy `lip = N` (giống RET) |
+| `CROWD ...` | Nhận input từ người dùng, ghi đè dòng hiện tại |
+| `END` | Kết thúc chương trình |
+
+Program được gọi từ `[VERSE1]`:
+
+```python
+reader(song_flag_hunters, '[VERSE1]')
+```
+
+Trong khi đó `secret_intro` — phần chứa flag — nằm ở **index 0–3**, trước cả `[REFRAIN]` và `[VERSE1]`. Không có instruction nào trong luồng bình thường nhảy tới đó.
+
+---
+
+## Phân tích
+
+### Xác định vị trí flag
+
+`secret_intro` được ghép vào đầu `song_flag_hunters`:
+
+```python
+secret_intro = \
+'''Pico warriors rising, puzzles laid bare,
+Solving each challenge with precision and flair.
+With unity and skill, flags we deliver,
+The ether's ours to conquer, ''' + flag + '\n'
+```
+
+Sau `splitlines()`, flag nằm tại **index 3** (0-based):
+
+```
+index 0: "Pico warriors rising, puzzles laid bare,"
+index 1: "Solving each challenge with precision and flair."
+index 2: "With unity and skill, flags we deliver,"
+index 3: "The ether's ours to conquer, picoCTF{...}"
+```
+
+### Tìm lỗ hổng injection
+
+Phần xử lý `CROWD`:
+
+```python
+elif re.match(r"CROWD.*", line):
+    crowd = input('Crowd: ')
+    song_lines[lip] = 'Crowd: ' + crowd   # ghi đè dòng hiện tại
+    lip += 1
+```
+
+Sau khi nhận input, dòng đó bị **ghi đè hoàn toàn**. Khi `REFRAIN` được gọi lần 2, nó nhảy lại `[REFRAIN]+1` và đọc lại dòng vừa bị ghi đè — lần này dòng đó được `split(';')` và tokenize lại như instruction mới.
+
+### Payload
+
+Nhập `;RETURN 3` ở `Crowd:` lần đầu:
+
+```
+song_lines[lip] = "Crowd: ;RETURN 3"
+```
+
+Khi REFRAIN được gọi lần 2, dòng này được split:
+
+```python
+"Crowd: ;RETURN 3".split(';') → ["Crowd: ", "RETURN 3"]
+```
+
+- `"Crowd: "` → rơi vào `else`, in ra, `lip += 1`
+- `"RETURN 3"` → khớp `RETURN [0-9]+` → `lip = 3`
+- Vòng lặp tiếp theo in `song_lines[3]` → **flag**
+
+---
+
+## Attack Chain
+
+```
+Đọc source → flag nằm ở index 3, không được in trong luồng bình thường
+    ↓ CROWD nhận input và ghi đè dòng hiện tại
+    ↓ Dòng bị ghi đè được tokenize lại ở lần REFRAIN thứ 2
+Inject ";RETURN 3" → RETURN 3 được thực thi → lip = 3 → flag được in
+```
+
+---
+
+## Kết quả thực thi
+
+```bash
+nc verbal-sleep.picoctf.net 58276
+# ...
+Crowd: ;RETURN 3
+# ...
+Crowd:                          ← Enter trắng
+The ether's ours to conquer, picoCTF{70637h3r_f0r3v3r_0ed60683}
+```
+
+---
+
+## Result
+
+```
+picoCTF{70637h3r_f0r3v3r_0ed60683}
+```
+
+---
+
+## Kiến thức rút ra
+
+**1. Custom interpreter = attack surface**
+
+Bất kỳ chương trình nào tự implement ngôn ngữ/interpreter đều có thể bị khai thác nếu input của người dùng được đưa trở lại vào luồng thực thi. Đây là pattern gặp trong template injection, macro processor, và script engine vulnerabilities.
+
+**2. Code injection vs Data injection**
+
+Bài này là dạng **code injection** — input của người dùng (`crowd`) không chỉ được in ra mà còn được **re-evaluated** như instruction. So sánh:
+
+| Loại | Ví dụ thực tế |
+|------|--------------|
+| Code injection | SSTI, eval() injection, macro injection |
+| Data injection | SQLi, XSS, Command injection |
+
+**3. Đọc source code là kỹ năng RE quan trọng nhất**
+
+Với bài có source code, không cần Ghidra hay IDA — đọc flow, hiểu interpreter, tìm điểm input được re-evaluated là đủ.
+
+---
+
+## Tools Used
+
+- **nc** — kết nối instance
+- **source code analysis** — đọc và hiểu `lyric-reader.py`
+
+---
+
+## Author
+
+|              |                                        |
+| ------------ | -------------------------------------- |
+| **Author**   | Nguyễn Trung Nguyên                    |
+| **Team**     | grep\_and\_pray                        |
+| **CTFtime**  | [grep\_and\_pray](https://ctftime.org) |
+| **Date**     | 2026-06-10                             |
+| **Platform** | CyLab Security Academy                 |
+
+---
+
+*Writeup by **grep_and_pray** (Nguyễn Trung Nguyên)*  
+*AI-assisted documentation: Claude (Anthropic) — dùng để hỗ trợ viết writeup và giải thích kiến thức. Challenge được tự giải.*
