@@ -1,7 +1,7 @@
 # CTF Writeup — Enhance!
 **Platform:** CyLab Security Academy (PicoCTF)  
 **Category:** Forensics  
-**Difficulty:** Easy  
+**Difficulty:** Medium  
 **Flag:** `picoCTF{3nh4nc3d_24374675}`
 
 ---
