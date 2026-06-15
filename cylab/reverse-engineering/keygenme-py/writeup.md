@@ -2,7 +2,7 @@
 **Platform:** CyLab Security Academy (PicoCTF)  
 **Category:** Reverse Engineering  
 **Difficulty:** Medium  
-**Flag:** `picoCTF{1n_7h3_kk3y_of_0b7d366e}`
+**Flag:** `picoCTF{1n_7h3_kk3y_of_08c46aa4}`
 
 ---
 
@@ -81,11 +81,11 @@ Tính SHA256 của b"BENNETT":
 h = "06370bd6e42f644c163923e35a5cc7a580c1ac1b7b155f97d797b944f29e81d0"
      0 1 2 3 4 5 6 7 8 ...
 
-h[4]='0'  h[5]='b'  h[3]='7'  h[6]='d'
-h[2]='3'  h[7]='6'  h[1]='6'  h[8]='e'
+h[4]='0'  h[5]='8'  h[3]='c'  h[6]='4'
+h[2]='6'  h[7]='a'  h[1]='6'  h[8]='a'
 ```
 
-Dynamic part = `0b7d366e`
+Dynamic part = `08c46aa4`
 
 Script generate key:
 
@@ -100,7 +100,7 @@ key_part_dynamic = h[4] + h[5] + h[3] + h[6] + h[2] + h[7] + h[1] + h[8]
 
 key = key_part_static1_trial + key_part_dynamic + "}"
 print(key)
-# Output: picoCTF{1n_7h3_kk3y_of_0b7d366e}
+# Output: picoCTF{1n_7h3_kk3y_of_08c46aa4}
 ```
 
 ---
@@ -114,7 +114,7 @@ picoCTF{1n_7h3_kk3y_of_XXXXXXXX}
     ↓ reverse check_key() → SHA256(b"BENNETT") index [4,5,3,6,2,7,1,8]
 h = "06370bd6e42f644c163923e35a5cc7a580c1ac1b7b155f97d797b944f29e81d0"
     ↓ ghép dynamic part
-picoCTF{1n_7h3_kk3y_of_0b7d366e}
+picoCTF{1n_7h3_kk3y_of_08c46aa4}
 ```
 
 ---
@@ -122,7 +122,7 @@ picoCTF{1n_7h3_kk3y_of_0b7d366e}
 ## Result
 
 ```
-picoCTF{1n_7h3_kk3y_of_0b7d366e}
+picoCTF{1n_7h3_kk3y_of_08c46aa4}
 ```
 
 ---
